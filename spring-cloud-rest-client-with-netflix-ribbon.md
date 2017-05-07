@@ -2,6 +2,14 @@
 
 From [Baeldung](http://www.baeldung.com/spring-cloud-rest-client-with-netflix-ribbon)
 
+## 0. 个人描述  
+
+最上边这一段是我个人对这个新知识的掌握概述，我在直接看完文档后还是有困惑的，看了示例源码才明白了，文章中会多次提到一个概念叫 client side 负载均衡，客户端负载均衡，就我个人而言这个词的表面意思，我还是不能完全理解的，知道最后才明白了，这篇文章所探讨的是，如何改进RestTemplate，使RestTemplate具有不向单一的url发送请求，而是从同类的服务中随机（按规则）选择一个url,(一个服务，或者一个主机)来发送请求，以此来实现多个同类服务来处理同一类url请求，让RestTemplate具有自主选择的权利，因为RestTemplate是RestClient客户端，所以在客户端上决定选择哪个最佳服务来处理请求的负载均衡的实现方法叫作客户端负载均衡，所以Ribbon叫作client-side load balancer。本文所有的操作配置全部是在RestTemplate的客户端操作的，文章中没有任何地方是在处理url请求的服务中操作配置的，这里的服务端只是普通的服务端，不需要为负载均衡这个特殊的客户端做任何配置，只不过的同一个服务的发布包，在多个端口运行，多个主机运行起来，并把相关的host和port提前记录下来。 
+
+### 0.1 类似的实现方法
+
+![load-balancer](http://ogyd2yldv.bkt.clouddn.com/mcna_0304-67cab38d9d4ef22eb45e1c22e0292f2f.png)
+
 ## 1. Introduction 简介  
 
 Netflix [Ribbon](https://github.com/Netflix/ribbon) 是一个IPC cloud library. Ribbon 主要功能是提供了client-side 负载均衡算法。  
@@ -137,7 +145,7 @@ public class ServerLocationApp {
 
 注意，我们也为RestTemplate加上了@LoadBalanced的注解。这个注解的含义是，我们想要负载均衡在这个例子中是用Ribbon负载均衡。  
 
-## 7. Failure Resiliency in Ribbon      Ribbon中的错误弹性  
+## 7. Failure Resiliency in Ribbon      Ribbon中的错误恢复力  
 
 正如我们在这篇文章前边探讨过的，Ribbon API 不仅仅提供client side负载均衡，它还建立了错误弹性。  
 
@@ -153,7 +161,10 @@ public class ServerLocationApp {
 
 在这篇文章中，我们探讨了Netflix Ribbon API，还有在一个简单的演示应用中它的实现。  
 
-The complete source code for the example described above can be found on the [GitHub repository](https://github.com/eugenp/tutorials/tree/master/spring-cloud/spring-cloud-ribbon-client).
+The complete source code for the example described above can be found on the [GitHub repository](https://github.com/eugenp/tutorials/tree/master/spring-cloud/spring-cloud-ribbon-client).  
+
+
+我们将会探讨下一篇，相关性非常大的，探讨内容有，这篇文章中提到的断路器，以及怎样更加方便灵活的在Sping Cloud的微服务架构下使用Ribbon负载均衡。 [spring-cloud-netflix-hystrix](http://www.baeldung.com/spring-cloud-netflix-hystrix)
 
 
 
