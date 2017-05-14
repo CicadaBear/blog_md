@@ -143,6 +143,25 @@ protected void configure(HttpSecurity http) {
 
 这个filter将不会设置user session并且依赖于Redis传递一个共享的security context. 同样的，它依赖于另一个服务，网关服务 gateway,来提供认证信息。  
 
+### 4.3. Authenticating with Config Service 
+
+在发现服务应用中，添加两个properties到bootstrap.properties:  
+
+```
+spring.cloud.config.username=configUser
+spring.cloud.config.password=configPassword
+```
+这两个属性将会让发现服务认证连接到config service在启动的时候。  
+
+更新一下git配置仓库中的discovery.properties. 
+
+```
+eureka.client.serviceUrl.defaultZone=
+  http://discUser:discPassword@localhost:8082/eureka/
+eureka.client.register-with-eureka=false
+eureka.client.fetch-registry=false
+```
+我们添加了basic 认证
 
 
 
