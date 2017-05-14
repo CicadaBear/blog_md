@@ -1,5 +1,7 @@
 # A Guide to Spring Cloud Netflix – Hystrix  
 
+![circuit-breaker-pattern](http://ogyd2yldv.bkt.clouddn.com/circuit-breaker-pattern-8-638.jpg)
+
 ## 1. Overview 概览
 
 这篇教程将会讲解Spring Cloud Netflix Hystrix，Spring Cloud Netflix Hystrix是一个容错库，我们将会使用这个库来实现断路器企业级模式，这个模式描述了一种策略来防止service层的不同级别的级联失败。  
@@ -297,7 +299,7 @@ server.port=8082
 ```  
 前者需要被开启通过在@Configuration加上@EnableHystrixDashboard注解，后一个会在应用中自动开启必须的指标参数。  
 
-重启应用之后，浏览器打开http://localhost:8080/hystrix,input the metrics url of a ‘hystrix.stream’ and begin monitoring. Finally we should see something like this:  
+重启应用之后，浏览器打开http://localhost:8080/hystrix, input the metrics url of a ‘hystrix.stream’ and begin monitoring. Finally we should see something like this:  
 
 ![Hystrix Dashboard](http://inprogress.baeldung.com/wp-content/uploads/2016/08/Screenshot_20160819_031730-268x300.png)  
 
@@ -314,7 +316,18 @@ This means that we’re able to consume services with included fallback using �
 这意味着我们能够消费服务的时候使用fallback，通过使用'static'或者默认数据实现，并且我们能够监视这些数据的使用。
 
 
- 
+## 8. 拓展
+本篇文章跟上一篇负载均衡Ribbon的有很大关系，[spring-cloud-rest-client-with-netflix-ribbon](http://cicadabear.cc/2017/05/07/spring-cloud-rest-client-with-netflix-ribbon/)。  
+
+但是，本篇文章中没有提及负载均衡，附加说明一下，其实@FeignClient已经实现了Ribbon Client Side Load Balancer.
+Spring官网文档[spring-cloud-ribbon](http://cloud.spring.io/spring-cloud-netflix/spring-cloud-netflix.html#spring-cloud-ribbon)。  
+
+Ribbon中也实现了断路器模式，只是一部分，只是针对服务响应不正常达到临界值关闭服务，过滤出ping不正常的服务，只是在大的方面实现了，再具体方法的相应失败上并没有实现，现在由Hystrix补上了。  
+
+好了，现在完美了，FeignClient(Ribbon),Hystrix。负载均衡，断路器都实现了。
+
+
+*** 
 
 
 
