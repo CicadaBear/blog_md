@@ -132,9 +132,61 @@ It seems that we have run out of memory. Additionally, no results were written t
 
 >    对于这个方法还有一些警告。 必须读取所有的行在这个result set中，或者关闭它，在你在这个连接上可能触发任何其他查询之前，否则，会抛出异常。  
 
+Ok, it seems that when using MySQL in order to really stream the results we need to satisfy three conditions:  
 
+要想使用MySQL来stream results,我们需要满足三个条件： 
 
+* Forward-only resultset
+* Read-only statement
+* Fetch-size set to Integer.MIN_VALUE
 
+Forward-only seems to be set already by Spring Data so we don't have to do anything special about that. Our code sample already has @Transactional(readOnly = true) annotation which is enough to satisfy the second criteria. What seems to be missing is the fetch-size. We can set it up using query hints on the repository method:  
+
+Forward-only好像已经被Spring Data设置上了，所以，我们不需要做任何相关的配置。 我们的代码样例已经有了@Transactional(readOnly = true)注解，这个注解就可以满足第二个条件了。好像fetch-size丢失了，我们可以使用query hint在repository的方法上:
+
+```
+...
+import static org.hibernate.jpa.QueryHints.HINT_FETCH_SIZE;
+
+@Repository
+public interface TodoRepository extends JpaRepository<Todo, Long> {
+
+	@QueryHints(value = @QueryHint(name = HINT_FETCH_SIZE, value = "" + Integer.MIN_VALUE))
+	@Query(value = "select t from Todo t")
+	Stream<Todo> streamAll();
+	
+	...
+}
+```
+With query hints in place, let's run export again:
+
+![mem-streaming.png](http://ogyd2yldv.bkt.clouddn.com/mem-streaming.png)
+
+Everything is working now, and it seems it's much more efficient than the paging approach:
+
+所有的都工作了，看起来跟分页的方法比较更有效率了。  
+
+* When streaming, export is finished in about 9 seconds vs about 137 seconds when using paging 当streaming的时候，导出在9秒后结束，当使用分页方法的时候，耗时137秒
+
+* It seems offset performance, query overhead and result preloading can really hurt paging approach when dataset is sufficiently large 看起来offset性能，过多查询，结果预加载会真的伤害分页方法，当数据量非常大的时候。  
+
+## Conclusions 总结
+
+* We've seen significant performance improvements when using streaming (via scrollable resultsets) vs paging, admittedly in a very specific task of exporting data. 我们已经看到了显著的增长，当使用streaming(通过 scrollable resultsets)对比分页，公认的在非常特殊的额导出数据时使用。
+
+* Spring Data's new features give really convenient access to scrollable resultsets via streams. Spring Data的新功能非常方便的访问scrollable resultsets通过streams.
+
+* There are gotchas to get it working with MySQL, but they are manageable. 这里跟MySQL工作有坑，但是可以管理。  
+
+* There are further restrictions when reading scrollable result sets in MySQL - no statement may be issued through the same database connection until the resultset is fully read. 这里还有更多的限制, 当在MySQL读scrollable result sets时，当读完之前不能有任何其他查询操作。  
+
+* The export works fine because we are writing results directly to HttpServletResponse. If we were using default Spring's message converters (e.g. returning stream from the controller method ) then there's a good chance this would not work as expected. Here's an interesting [article](https://www.airpair.com/java/posts/spring-streams-memory-efficiency) on this subject. 这个导出工作顺利是因为，我们直接把结果写入到HttpServletResponse中。 如果，我们使用默认的Spring's message converters（从controller方法中返回stream), 然后这里有个好机会，不会按照预期工作。 这里有一个有趣的文章。  
+
+I would love to try the tests with other database and explore possibilities of streaming results via Spring message converters as hinted in article linked above. If you'd like to experiment yourself, the test application is available on github. I hope you found the article interesting and I welcome your comments in the comment section below.
+
+文章主要部分完了。
+
+Apache POI库 XSSFWorkbook全部Excel（-2007）文档全部加载到内存， SXSSFWorkbook Excel(2007-)可以只把固定行加入到内存。 100行之外的部分以文件保存。 最后写入到输出流。
 
 
 
