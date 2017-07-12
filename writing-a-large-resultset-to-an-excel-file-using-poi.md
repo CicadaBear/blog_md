@@ -119,7 +119,7 @@ It seems that we have run out of memory. Additionally, no results were written t
 
 >    By default, ResultSets are completely retrieved and stored in memory. In most cases this is the most efficient way to operate and, due to the design of the MySQL network protocol, is easier to implement. If you are working with ResultSets that have a large number of rows or large values and cannot allocate heap space in your JVM for the memory required, you can tell the driver to stream the results back one row at a time. To enable this functionality, create a Statement instance in the following manner:   
 >    
->    默认情况下，所有的ResultSets重新获取并且存储在内存中。 在大多数案例中，这是最有效率的方法，并且，由于MySQL的网络协议，很容易实现。 如果涉及到的ResultSets有大量的行或者大值，你可以告诉驱动来一次stream回一行。 要开启这个功能，用下边的方法创建一个statement实例：
+>    默认情况下，所有的ResultSets重新获取并且存储在内存中。 在大多数案例中，这是最有效率的方法，并且，由于MySQL的网络协议，很容易实现。 如果涉及到的ResultSets有大量的行或者大值，你可以告诉驱动来一次stream回（返回）一行。 要开启这个功能，用下边的方法创建一个statement实例：
 
 >    stmt = conn.createStatement(java.sql.ResultSet.TYPE_FORWARD_ONLY,java.sql.ResultSet.CONCUR_READ_ONLY);
 >    stmt.setFetchSize(Integer.MIN_VALUE);
@@ -186,10 +186,77 @@ I would love to try the tests with other database and explore possibilities of s
 
 文章主要部分完了。
 
-Apache POI库 XSSFWorkbook全部Excel（-2007）文档全部加载到内存， SXSSFWorkbook Excel(2007-)可以只把固定行加入到内存。 100行之外的部分以文件保存。 最后写入到输出流。
+Apache POI库 XSSFWorkbook全部Excel（-2007）文档全部加载到内存， SXSSFWorkbook Excel(2007-)可以只把固定行加入到内存。 100行之外的部分以文件保存。 最后写入到输出流。  
 
+[Apache POI 文档](https://poi.apache.org/spreadsheet/index.html)  
 
+HSSF is the POI Project's pure Java implementation of the Excel '97(-2007) file format. XSSF is the POI Project's pure Java implementation of the Excel 2007 OOXML (.xlsx) file format.  
 
+HSSF是POI项目的纯Java对于Excel '97(-2007) .xls文件的实现。 XSSF是Excel 2007 .xlsx文件格式的Java实现。
+
+HSSF and XSSF provides ways to read spreadsheets create, modify, read and write XLS spreadsheets. They provide:  
+
+HSSF and XSSF提供了电子表格XLS的增改读写的方法。 具体是：  
+
+* low level structures for those with special needs 
+* an eventmodel api for efficient read-only access
+* a full usermodel api for creating, reading and modifying XLS files
+
+SXSSF (package: org.apache.poi.xssf.streaming) is an API-compatible streaming extension of XSSF to be used when very large spreadsheets have to be produced, and heap space is limited. SXSSF achieves its low memory footprint by limiting access to the rows that are within a sliding window, while XSSF gives access to all rows in the document. Older rows that are no longer in the window become inaccessible, as they are written to the disk.  
+
+SXSSF（位于包：org.apache.poi.xssf.streaming）是一个API兼容的XSSF的streaming拓展，被用于特大的电子表格，而且当堆内存有限的时候。 SXSSF通过限制访问行数实现了小内存消耗，在一个滑动窗口，而XSSF提供的是访问文档中的所有行。 之前的行，不在窗口中的，变得不可访问，它们被写入到了文件中。
+
+You can specify the window size at workbook construction time via new SXSSFWorkbook(int windowSize) or you can set it per-sheet via SXSSFSheet#setRandomAccessWindowSize(int windowSize)  
+
+可以在workbook工作簿创建时指定窗口的大小，通过new SXSSFWorkbook(窗口大小/行数)，或者也可以在每一个sheet上设置 SXSSFSheet#setRandomAccessWindowSize(int windowSize)。  
+
+When a new row is created via createRow() and the total number of unflushed records would exceed the specified window size, then the row with the lowest index value is flushed and cannot be accessed via getRow() anymore.  
+
+当一个新的行通过createRow()被创建，并且没有写入文件中的记录将要超过指定的窗口大小，然后索引最小的行将会被写入文件，并且再也不能通过getRow访问。  
+
+The default window size is 100 and defined by SXSSFWorkbook.DEFAULT_WINDOW_SIZE.  
+
+默认的窗口大小是100，而且是被SXSSFWorkbook.DEFAULT_WINDOW_SIZE定义的。  
+
+A windowSize of -1 indicates unlimited access. In this case all records that have not been flushed by a call to flushRows() are available for random access.  
+
+当窗口大小为-1，表示无限的访问。 在这个情况下，所有的记录，没有被flushRows()写入到文件的，都可以被随机访问。  
+
+Note that SXSSF allocates temporary files that you must always clean up explicitly, by calling the dispose method.  
+
+注意，SXSSF分配了临时文件，这些临时文件必须显式清理，通过调用dispose方法。  
+
+SXSSFWorkbook defaults to using inline strings instead of a shared strings table. This is very efficient, since no document content needs to be kept in memory, but is also known to produce documents that are incompatible with some clients. With shared strings enabled all unique strings in the document has to be kept in memory. Depending on your document content this could use a lot more resources than with shared strings disabled.  
+
+SXSSFWorkbook默认使用inline strings 而不是 shared strings table 共享字符串表。 这样会更有效率，既然没有文档内容需要保持在内存中，但是也会跟一些客户端不兼容。 开启shared strings共享字符串，所有的唯一的文档中的字符串必须保持在内存中。 取决于你的文档内容，开启共享字符串可能会使用更多的资源比关闭它。  
+
+Please note that there are still things that still may consume a large amount of memory based on which features you are using, e.g. merged regions, hyperlinks, comments, ... are still only stored in memory and thus may require a lot of memory if used extensively.  
+
+请注意，这里还是有东西会消耗大量的内存，要看你使用的功能。  
+
+Carefully review your memory budget and compatibility needs before deciding whether to enable shared strings or not.
+
+The example below writes a sheet with a window of 100 rows. When the row count reaches 101, the row with rownum=0 is flushed to disk and removed from memory, when rownum reaches 102 then the row with rownum=1 is flushed, etc.
+
+。。。
+
+上边的文章说到了Spring Data中如何使用repository方法一行一行获取大量数据，下边的例子是如何使用entityManager实现。  
+
+```
+ 
+		Session hibernateSession = entityManager.unwrap(Session.class);
+        Session session = hibernateSession.getSessionFactory().openSession();
+
+        ScrollableResults scResults = session.createQuery(sql + querySql)
+                .setCacheable(false)
+                .setFetchSize(Integer.MIN_VALUE)
+                .setReadOnly(true)
+                .scroll(ScrollMode.FORWARD_ONLY);
+        List<List<String>> dataList = new ArrayList<>();
+        while (scResults.next()) {
+		}
+		session.close();
+```
 
 *** 
 ### Reference
@@ -203,8 +270,9 @@ Apache POI库 XSSFWorkbook全部Excel（-2007）文档全部加载到内存， S
 
 [how-to-sxssf](https://poi.apache.org/spreadsheet/how-to.html#sxssf)
 
+[hibernate-scrollableresults-and-scrollmode-example](http://www.concretepage.com/hibernate/hibernate-scrollableresults-and-scrollmode-example)
 
-
+[get-hibernate-sessionfactory-from-jpas-entitymanagerfactory](https://stackoverflow.com/questions/19030022/get-hibernate-sessionfactory-from-jpas-entitymanagerfactory)
 
 
 
