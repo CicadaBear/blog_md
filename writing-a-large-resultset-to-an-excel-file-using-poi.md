@@ -234,9 +234,56 @@ Please note that there are still things that still may consume a large amount of
 
 请注意，这里还是有东西会消耗大量的内存，要看你使用的功能。  
 
-Carefully review your memory budget and compatibility needs before deciding whether to enable shared strings or not.
+Carefully review your memory budget and compatibility needs before deciding whether to enable shared strings or not.  
 
-The example below writes a sheet with a window of 100 rows. When the row count reaches 101, the row with rownum=0 is flushed to disk and removed from memory, when rownum reaches 102 then the row with rownum=1 is flushed, etc.
+仔细检查内存预算和兼容性需求，来决定是否开启shared strings 共享字符串。  
+
+The example below writes a sheet with a window of 100 rows. When the row count reaches 101, the row with rownum=0 is flushed to disk and removed from memory, when rownum reaches 102 then the row with rownum=1 is flushed, etc.  
+
+下边的例子写入一个窗口100行的电子表格。 当行总数达到101，行号为0的写入文件，从内存移除，当总数达到102行，行号为1的写入文件，。。。
+
+
+```
+
+		import junit.framework.Assert;
+		import org.apache.poi.ss.usermodel.Cell;
+		import org.apache.poi.ss.usermodel.Row;
+		import org.apache.poi.ss.usermodel.Sheet;
+		import org.apache.poi.ss.usermodel.Workbook;
+		import org.apache.poi.ss.util.CellReference;
+		import org.apache.poi.xssf.streaming.SXSSFWorkbook;
+
+    public static void main(String[] args) throws Throwable {
+        SXSSFWorkbook wb = new SXSSFWorkbook(100); // keep 100 rows in memory, exceeding rows will be flushed to disk
+        Sheet sh = wb.createSheet();
+        for(int rownum = 0; rownum < 1000; rownum++){
+            Row row = sh.createRow(rownum);
+            for(int cellnum = 0; cellnum < 10; cellnum++){
+                Cell cell = row.createCell(cellnum);
+                String address = new CellReference(cell).formatAsString();
+                cell.setCellValue(address);
+            }
+
+        }
+
+        // Rows with rownum < 900 are flushed and not accessible
+        for(int rownum = 0; rownum < 900; rownum++){
+          Assert.assertNull(sh.getRow(rownum));
+        }
+
+        // ther last 100 rows are still in memory
+        for(int rownum = 900; rownum < 1000; rownum++){
+            Assert.assertNotNull(sh.getRow(rownum));
+        }
+        
+        FileOutputStream out = new FileOutputStream("/temp/sxssf.xlsx");
+        wb.write(out);
+        out.close();
+
+        // dispose of temporary files backing this workbook on disk
+        wb.dispose();
+    }
+```
 
 。。。
 
@@ -256,6 +303,12 @@ The example below writes a sheet with a window of 100 rows. When the row count r
         while (scResults.next()) {
 		}
 		session.close();
+```
+
+可能遇到的问题，Hibernate自动查询，还没有读取完数据的时候，Hibernate开始了自动查询，造成错误，打开Hibernate的show_sql，会看到正好输出了一条sql, 就抛出了异常。
+
+```
+Streaming result set com.mysql.jdbc.RowDataDynamic@XXXXXX is still active. .....
 ```
 
 *** 
